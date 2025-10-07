@@ -1,17 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";  // Add useEffect import
 import { useNavigate } from "react-router-dom";
 import Loader from "../components/Loader";
 // import { getToken } from "../api/api"; 
-import { jwtDecode } from "jwt-decode";
+// import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import axios from "axios";
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
+
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
+
+  // Check for existing token on mount and redirect if authenticated
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
