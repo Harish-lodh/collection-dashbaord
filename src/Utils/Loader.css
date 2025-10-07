@@ -1,0 +1,32 @@
+.loader-spinner {
+  position: relative;
+  display: inline-block;
+  color: #333; /* override via inline style or parent text color */
+}
+
+.loader-spinner .spoke {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+}
+
+.loader-spinner .spoke i {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Bar size */
+  width: 7px;
+  height: 20px;
+  border-radius: 3px;
+  top: 6px;
+
+  background: currentColor;
+  opacity: 0.15;
+  animation: spinner-fade var(--duration, 1.2s) linear infinite;
+  will-change: opacity;
+}
+
+@keyframes spinner-fade {
+  0%   { opacity: 1; }
+  100% { opacity: 0.15; }
+}
