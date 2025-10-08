@@ -44,7 +44,7 @@ const Layout = ({ role }) => {
             "flex-1  mt-6",        // prevent overflow and weird shrinking
             "pt-6",                  // space below header
             "transition-[padding] duration-300",
-            "px-4 sm:px-4 lg:px-6"   // content padding
+            "px-4 mx-6 sm:px-4 sm:ml-16 lg:px-4 "   // content padding
           ].join(" ")}
         >
           <Outlet />
