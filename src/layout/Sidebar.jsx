@@ -76,6 +76,7 @@ const Sidebar = () => {
       children: [
         { label: "RM / Collectors", path: "/users/rm" },
          { label: "Dealers", path: "/users/dealers" },
+         {label:"track collectors",path:"/users/map"}
       ],
     },
     {

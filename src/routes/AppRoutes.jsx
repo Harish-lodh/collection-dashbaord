@@ -5,6 +5,7 @@ import Layout from "../layout/Layout";
 import PaymentsList from '../pages/PaymentsList';
 import UserList from '../pages/usersList';
 import CollectionsDashboard from '../pages/dashboard';
+import TrackingBrowser from '../pages/TrackingBrowser'
 // Import other page components as needed, e.g.:
 // import Dashboard from "../pages/Dashboard";
 
@@ -33,6 +34,7 @@ const AppRoutes = () => {
                 <Route path="/reports/daily" element={<h1>working on reports</h1>} />
                 <Route path="/repossession" element={<h1>working on repossession</h1>} />
                 <Route path="/users/dealers" element={<h1>working on dealers</h1>} />
+                <Route path="/users/map" element={<TrackingBrowser/>}/>
             </Route>
         </Routes>
     );
