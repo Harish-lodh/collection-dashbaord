@@ -51,7 +51,7 @@ const LeafletMap = ({ userId, from, to }) => {
         if (from) params.append("from", from);
         if (to) params.append("to", to);
         const qs = params.toString() ? `?${params.toString()}` : "";
-        const res = await axios.get(`${BACKEND_URL}/tracking/${userId}${qs}`);
+        const res = await axios.get(`${BACKEND_URL}/web/tracking/${userId}${qs}`);
         if (ignore) return;
         setPoints(Array.isArray(res.data?.data) ? res.data.data : []);
         setErr(null);

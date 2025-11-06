@@ -45,7 +45,7 @@ const TrackingBrowser = () => {
     (async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${BACKEND_URL}/getUsers`);
+        const res = await axios.get(`${BACKEND_URL}/web/getUsers`);
         const list = Array.isArray(res.data?.data)
           ? res.data.data
           : Array.isArray(res.data)

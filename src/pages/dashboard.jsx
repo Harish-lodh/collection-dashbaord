@@ -80,7 +80,7 @@ export default function Dashboard() {
         setErr("");
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          `${BACKEND_BASE_URL}/dashboard?period=${encodeURIComponent(period.value)}`,
+          `${BACKEND_BASE_URL}/web/dashboard?period=${encodeURIComponent(period.value)}`,
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
         if (cancel) return;
