@@ -86,13 +86,36 @@ export default function Dashboard() {
         if (cancel) return;
 
         const { stats, charts } = res.data || {};
+        // inside your axios call after getting res.data
+        const utcLabels = charts?.trend?.labels || [];
+
+        // convert each UTC date string to IST-readable format
+        const istLabels = utcLabels.map(utcTime => {
+          const utcDate = new Date(utcTime); // UTC assumed
+          // convert to IST by adding 5.5 hours (19800000 ms)
+          const istDate = new Date(utcDate.getTime() + 5.5 * 60 * 60 * 1000);
+          // format as local readable label
+          return istDate.toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            hour12: true,
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        });
+
+        setTrend({
+          labels: istLabels,
+          data: charts?.trend?.data || []
+        });
 
         setTotalCollections(stats?.totalCollections ?? 0);
         setActiveLoans(stats?.activeLoans ?? 0);
         setRepossessions(stats?.repossessions ?? 0);
         setActiveAgents(stats?.activeAgents ?? 0);
 
-        setTrend(charts?.trend ?? { labels: [], data: [] });
+        // setTrend(charts?.trend ?? { labels: [], data: [] });
         setModes(charts?.paymentModes ?? { labels: [], data: [] });
         setAgents(charts?.agentPerformance ?? { labels: [], data: [] });
       } catch (e) {

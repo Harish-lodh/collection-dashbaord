@@ -1,4 +1,3 @@
-
 import ".././Utils/Loader.css"; // your CSS
 
 export default function Loader({
@@ -30,8 +29,8 @@ export default function Loader({
           className="spoke"
           style={{ transform: `rotate(${i * step}deg)` }}
         >
-          {/* Correctly phase-shift each spoke so there is no jump */}
-          <i style={{ animationDelay: `${-(duration / spokes) * i}s` }} />
+          {/* Phase-shift each spoke for smooth clockwise rotation illusion */}
+          <i style={{ animationDelay: `${-(duration / spokes) * (spokes - 1 - i)}s` }} />
         </div>
       ))}
     </div>
