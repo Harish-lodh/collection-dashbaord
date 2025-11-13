@@ -12,7 +12,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Loader from "../components/Loader";
-
+import { getDealer } from "../Utils/helper";
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
 
 const fmtINRShort = (n) => {
@@ -63,7 +63,7 @@ export default function Dashboard() {
   const [trend, setTrend] = useState({ labels: [], data: [] });
   const [modes, setModes] = useState({ labels: [], data: [] });
   const [agents, setAgents] = useState({ labels: [], data: [] });
-
+  
   const options = [
     { value: "day", label: "Today" },
     { value: "week", label: "This Week" },
@@ -80,7 +80,7 @@ export default function Dashboard() {
         setErr("");
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          `${BACKEND_BASE_URL}/web/dashboard?period=${encodeURIComponent(period.value)}`,
+          `${BACKEND_BASE_URL}/web/dashboard?period=${encodeURIComponent(period.value)}&partner=${getDealer()}`,
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
         if (cancel) return;

@@ -3,6 +3,8 @@ import Table from "../components/Table";
 import axios from "axios";
 import Loader from "../components/Loader";
 import { bufferToBase64Image } from "../Utils/helper";
+import { getDealer } from "../Utils/helper";
+
 import {
   IconButton,
   Modal,
@@ -138,7 +140,7 @@ const PaymentsList = () => {
 
   const [anchorEl, setAnchorEl] = useState(null);
   const [tempFilters, setTempFilters] = useState(filters);
-
+  //const dealer = localStorage.getItem("dealer");
   /* === Fetch Users === */
   useEffect(() => {
     let ignore = false;
@@ -148,8 +150,8 @@ const PaymentsList = () => {
         const list = Array.isArray(res.data?.data)
           ? res.data.data
           : Array.isArray(res.data)
-          ? res.data
-          : [];
+            ? res.data
+            : [];
         const opts = list.map((u) => ({
           id: u.id,
           label: u.name || `User #${u.id}`,
@@ -202,7 +204,7 @@ const PaymentsList = () => {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      let query = `?page=${filters.page}&limit=${filters.limit}`;
+      let query = `?page=${filters.page}&limit=${filters.limit}&partner=${getDealer()}`;
       if (filters.customerName)
         query += `&customerName=${encodeURIComponent(filters.customerName)}`;
       if (filters.collectedBy?.length)
@@ -249,39 +251,39 @@ const PaymentsList = () => {
   ]);
 
   /* === Excel Export === */
-/* === Excel Export === */
-const exportToExcel = () => {
-  if (!payments.length) {
-    toast.warn("No data to export!");
-    return;
-  }
+  /* === Excel Export === */
+  const exportToExcel = () => {
+    if (!payments.length) {
+      toast.warn("No data to export!");
+      return;
+    }
 
-  // Explicitly include only relevant fields
-  const cleanData = payments.map((p) => ({
-    "Customer Name": p.customerName || "",
-    "Vehicle No.": p.vehicleNumber || "",
-    Contact: p.contactNumber || "",
-    "Payment Date": p.paymentDate
-      ? new Date(p.paymentDate).toLocaleDateString("en-IN", {
+    // Explicitly include only relevant fields
+    const cleanData = payments.map((p) => ({
+      "Customer Name": p.customerName || "",
+      "Vehicle No.": p.vehicleNumber || "",
+      Contact: p.contactNumber || "",
+      "Payment Date": p.paymentDate
+        ? new Date(p.paymentDate).toLocaleDateString("en-IN", {
           day: "2-digit",
           month: "short",
           year: "numeric",
         })
-      : "",
-    Mode: p.paymentMode || "",
-    "Transaction ID": p.paymentRef || "",
-    Amount: p.amount ? parseFloat(p.amount).toLocaleString("en-IN") : "",
-    "Collected By": p.collectedBy || "",
-    Status: p.status || "",
-  }));
+        : "",
+      Mode: p.paymentMode || "",
+      "Transaction ID": p.paymentRef || "",
+      Amount: p.amount ? parseFloat(p.amount).toLocaleString("en-IN") : "",
+      "Collected By": p.collectedBy || "",
+      Status: p.status || "",
+    }));
 
-  const ws = XLSX.utils.json_to_sheet(cleanData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Payments");
+    const ws = XLSX.utils.json_to_sheet(cleanData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Payments");
 
-  XLSX.writeFile(wb, "payments_filtered.xlsx");
-  toast.success("Excel exported successfully!");
-};
+    XLSX.writeFile(wb, "payments_filtered.xlsx");
+    toast.success("Excel exported successfully!");
+  };
 
 
   /* === Table Columns === */
@@ -295,14 +297,14 @@ const exportToExcel = () => {
       render: (v) =>
         v
           ? new Date(v).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
           : "-",
     },
     { key: "paymentMode", label: "Mode" },
-     { key: "paymentRef", label: "TRANSACTION ID" },
+    { key: "paymentRef", label: "TRANSACTION ID" },
     {
       key: "amount",
       label: "Amount (₹)",

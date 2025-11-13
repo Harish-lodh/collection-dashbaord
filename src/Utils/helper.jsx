@@ -9,3 +9,7 @@ export function bufferToBase64Image(bufferObj) {
   );
   return `data:image/jpeg;base64,${base64String}`;
 }
+
+export function getDealer(){
+  return localStorage.getItem("dealer");
+}
