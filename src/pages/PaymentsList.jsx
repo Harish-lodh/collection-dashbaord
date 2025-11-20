@@ -54,11 +54,9 @@ const FilterContent = ({
         multiple
         options={usersOpts}
         getOptionLabel={(option) => option.label}
-        value={
-          usersOpts.filter((u) =>
-            tempFilters.collectedBy?.includes(u.label)
-          ) || []
-        }
+        value={usersOpts.filter((u) =>
+          tempFilters.collectedBy?.includes(u.label)
+        )}
         onChange={(e, value) =>
           setTempFilters((prev) => ({
             ...prev,
@@ -138,6 +136,26 @@ const PaymentsList = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [tempFilters, setTempFilters] = useState(filters);
 
+  /* ------------------ Helper: Build Query ------------------ */
+  const buildQueryString = (baseFilters, override = {}) => {
+    const merged = { ...baseFilters, ...override };
+    const { page, limit, customerName, collectedBy, startDate, endDate } =
+      merged;
+
+    let query = `?page=${page}&limit=${limit}&partner=${getDealer()}`;
+
+    if (customerName)
+      query += `&customerName=${encodeURIComponent(customerName)}`;
+
+    if (collectedBy?.length)
+      query += `&collectedBy=${encodeURIComponent(collectedBy.join(","))}`;
+
+    if (startDate) query += `&startDate=${startDate}`;
+    if (endDate) query += `&endDate=${endDate}`;
+
+    return query;
+  };
+
   /* ------------------ Load Users ------------------ */
   useEffect(() => {
     (async () => {
@@ -146,8 +164,8 @@ const PaymentsList = () => {
         const list = Array.isArray(res.data?.data)
           ? res.data.data
           : Array.isArray(res.data)
-          ? res.data
-          : [];
+            ? res.data
+            : [];
 
         setUsersOpts(
           list.map((u) => ({
@@ -162,26 +180,25 @@ const PaymentsList = () => {
   }, []);
 
   /* ------------------ Image Loader ------------------ */
-const loadAndShowImage = async (id, type) => {
-  try {
-    const res = await axios.get(
-      `${BACKEND_BASE_URL}/web/collection/${id}/images?partner=${getDealer()}&type=${type}`
-    );
+  const loadAndShowImage = async (id, type) => {
+    try {
+      const res = await axios.get(
+        `${BACKEND_BASE_URL}/web/collection/${id}/images?partner=${getDealer()}&type=${type}`
+      );
 
-    const base64 = res.data.image;
+      const base64 = res.data.image;
 
-    if (base64) {
-      setSelectedImage(`data:image/jpeg;base64,${base64}`);
-      setOpenModal(true);
-    } else {
-      toast.warn("No image available");
+      if (base64) {
+        setSelectedImage(`data:image/jpeg;base64,${base64}`);
+        setOpenModal(true);
+      } else {
+        toast.warn("No image available");
+      }
+    } catch (err) {
+      console.error("Image load error:", err);
+      toast.error("Failed to load image");
     }
-  } catch (err) {
-    console.error("Image load error:", err);
-    toast.error("Failed to load image");
-  }
-};
-
+  };
 
   /* ------------------ Modal ------------------ */
   const handleCloseModal = () => {
@@ -198,7 +215,14 @@ const loadAndShowImage = async (id, type) => {
   const handleClose = () => setAnchorEl(null);
 
   const handleApply = () => {
-    setFilters(tempFilters);
+    setFilters((prev) => ({
+      ...prev,
+      page: 1, // reset page when applying new filters
+      customerName: tempFilters.customerName,
+      collectedBy: tempFilters.collectedBy,
+      startDate: tempFilters.startDate,
+      endDate: tempFilters.endDate,
+    }));
     handleClose();
   };
 
@@ -217,78 +241,95 @@ const loadAndShowImage = async (id, type) => {
   };
 
   /* ------------------ Fetch Payments ------------------ */
-  const fetchPayments = async () => {
-    setLoading(true);
+  useEffect(() => {
+    const fetchPayments = async () => {
+      setLoading(true);
+      try {
+        const query = buildQueryString(filters);
+        const res = await axios.get(
+          `${BACKEND_BASE_URL}/web/collection${query}`
+        );
+
+        const formatted = res.data.data.map((item) => ({
+          ...item,
+          loanId: item.loanId || "",
+          vehicleNumber:
+            item.vehicleNumber?.trim() !== "" ? item.vehicleNumber : "NA",
+        }));
+
+        setPayments(formatted);
+        setPagination({
+          total: res.data.total,
+          totalPages: res.data.totalPages,
+        });
+      } catch (err) {
+        console.error("Fetch Payments Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPayments();
+  }, [filters]); // single dependency
+
+  /* ------------------ Excel Export (ALL DATA, EXCLUDING IMAGE COLUMNS) ------------------ */
+  const exportToExcel = async () => {
     try {
-      let query = `?page=${filters.page}&limit=${filters.limit}&partner=${getDealer()}`;
+      if (!pagination.total) {
+        toast.warn("No data to export!");
+        return;
+      }
 
-      if (filters.customerName)
-        query += `&customerName=${encodeURIComponent(filters.customerName)}`;
-      if (filters.collectedBy?.length)
-        query += `&collectedBy=${encodeURIComponent(
-          filters.collectedBy.join(",")
-        )}`;
+      // Build same filter query, but force page=1 and limit = total
+      const query = buildQueryString(filters, {
+        page: 1,
+        limit: pagination.total,
+      });
 
-      if (filters.startDate) query += `&startDate=${filters.startDate}`;
-      if (filters.endDate) query += `&endDate=${filters.endDate}`;
+      // Fetch ALL filtered records, not just current page
+      const res = await axios.get(
+        `${BACKEND_BASE_URL}/web/collection${query}`
+      );
 
-      const res = await axios.get(`${BACKEND_BASE_URL}/web/collection${query}`);
-
-      const formatted = res.data.data.map((item) => ({
+      const allData = res.data.data.map((item) => ({
         ...item,
+        loanId: item.loanId || "",
         vehicleNumber:
           item.vehicleNumber?.trim() !== "" ? item.vehicleNumber : "NA",
       }));
 
-      setPayments(formatted);
-      setPagination({
-        total: res.data.total,
-        totalPages: res.data.totalPages,
-      });
+      // Dynamically filter exportable columns (exclude those with IconButton renders, i.e., images)
+      const exportColumns = columns.filter(
+        (col) =>
+          !col.render ||
+          !col.render.toString().includes("IconButton")
+      );
+
+      // Prepare headers from exportable columns
+      const headers = exportColumns.map((col) => col.label);
+
+      // Prepare data rows: apply render functions where available for formatting
+      const cleanData = allData.map((row) =>
+        exportColumns.reduce((acc, col) => {
+          const value =
+            col.render
+              ? col.render(row[col.key], row)
+              : row[col.key] ?? "-";
+          acc[col.label] = value;
+          return acc;
+        }, {})
+      );
+
+      const ws = XLSX.utils.json_to_sheet(cleanData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Payments");
+
+      XLSX.writeFile(wb, "payments_all_filtered.xlsx");
+      toast.success("Excel exported successfully!");
     } catch (err) {
-      console.error("Fetch Payments Error:", err);
-    } finally {
-      setLoading(false);
+      console.error("Export Excel Error:", err);
+      toast.error("Failed to export Excel");
     }
-  };
-
-  useEffect(() => {
-    fetchPayments();
-  }, [
-    filters.customerName,
-    filters.collectedBy,
-    filters.startDate,
-    filters.endDate,
-    filters.page,
-  ]);
-
-  /* ------------------ Excel Export ------------------ */
-  const exportToExcel = () => {
-    if (!payments.length) {
-      toast.warn("No data to export!");
-      return;
-    }
-
-    const cleanData = payments.map((p) => ({
-      "Customer Name": p.customerName || "",
-      "Vehicle No.": p.vehicleNumber || "",
-      Contact: p.contactNumber || "",
-      "Payment Date": p.paymentDate
-        ? new Date(p.paymentDate).toLocaleDateString("en-IN")
-        : "",
-      Mode: p.paymentMode || "",
-      "Transaction ID": p.paymentRef || "",
-      Amount: p.amount,
-      "Collected By": p.collectedBy || "",
-      Status: p.status || "",
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(cleanData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Payments");
-
-    XLSX.writeFile(wb, "payments_filtered.xlsx");
-    toast.success("Excel exported successfully!");
   };
 
   /* ------------------ Table Columns ------------------ */
@@ -303,10 +344,10 @@ const loadAndShowImage = async (id, type) => {
       render: (v) =>
         v
           ? new Date(v).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
           : "-",
     },
     { key: "paymentMode", label: "Mode" },
@@ -367,7 +408,6 @@ const loadAndShowImage = async (id, type) => {
   /* ------------------ Render ------------------ */
   return (
     <div className="p-2 flex-1 w-full">
-      
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold text-gray-800">Payments List</h2>
 
