@@ -14,6 +14,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Loader from "../components/Loader";
 import { getDealer } from "../Utils/helper";
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
+const VITE_MALHOTRA_URL=import.meta.env.VITE_MALHOTRA_URL;
 
 const fmtINRShort = (n) => {
   if (n == null) return "₹0";
@@ -63,7 +64,7 @@ export default function Dashboard() {
   const [trend, setTrend] = useState({ labels: [], data: [] });
   const [modes, setModes] = useState({ labels: [], data: [] });
   const [agents, setAgents] = useState({ labels: [], data: [] });
-  
+
   const options = [
     { value: "day", label: "Today" },
     { value: "week", label: "This Week" },
@@ -83,6 +84,7 @@ export default function Dashboard() {
           `${BACKEND_BASE_URL}/web/dashboard?period=${encodeURIComponent(period.value)}&partner=${getDealer()}`,
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
+        const totalCount=await axios.get(`${VITE_MALHOTRA_URL}/api/collection/malhotra/total-cases`)
         if (cancel) return;
 
         const { stats, charts } = res.data || {};
@@ -111,7 +113,7 @@ export default function Dashboard() {
         });
 
         setTotalCollections(stats?.totalCollections ?? 0);
-        setActiveLoans(stats?.activeLoans ?? 0);
+        setActiveLoans(totalCount?.data?.totalCases ||stats?.activeLoans || 0);
         setRepossessions(stats?.repossessions ?? 0);
         setActiveAgents(stats?.activeAgents ?? 0);
 
