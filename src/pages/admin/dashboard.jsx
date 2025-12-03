@@ -11,8 +11,8 @@ import CurrencyRupeeIcon from '@mui/icons-material/CurrencyRupee';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import Loader from "../components/Loader";
-import { getDealer } from "../Utils/helper";
+import Loader from "../../components/Loader";
+import { getDealer } from "../../Utils/helper";
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
 const VITE_MALHOTRA_URL=import.meta.env.VITE_MALHOTRA_URL;
 
