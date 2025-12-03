@@ -9,6 +9,7 @@ import TrackingBrowser from '../pages/TrackingBrowser'
 // Import other page components as needed, e.g.:
 // import Dashboard from "../pages/Dashboard";
 import ApprovePayments from "../pages/admin/ApprovePayments"
+
 // Simple ProtectedRoute component (move to its own file if preferred)
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -28,6 +29,7 @@ const AppRoutes = () => {
                 }
             >
                 <Route index element={<Navigate to="dashboard" replace />} />
+                {/* <Route path="collections" element={<ApprovePayments />} /> */}
                 <Route path="dashboard" element={<CollectionsDashboard />} />
                 <Route path="/collection/list" element={<PaymentsList />} />
                 <Route path="/collections" element={<ApprovePayments/>}/>

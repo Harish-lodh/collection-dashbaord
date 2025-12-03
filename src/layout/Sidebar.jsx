@@ -17,17 +17,16 @@ const Sidebar = () => {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [openSection, setOpenSection] = useState(null); // track open parent
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    try {
-      // const decoded = jwtDecode(token);
-      // setIsSuperAdmin(decoded.role?.toLowerCase() === "superadmin");
-      setIsSuperAdmin(true); // temporary for dev
-    } catch {
-      setIsSuperAdmin(false);
-    }
-  }, []);
+useEffect(() => {
+  const role = localStorage.getItem("role");
+
+  if (role) {
+    setIsSuperAdmin(role.toLowerCase() === "superadmin");
+  } else {
+    setIsSuperAdmin(false);
+  }
+}, []);
+
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -38,6 +37,8 @@ const Sidebar = () => {
   const toggleSection = (label) => {
     setOpenSection(openSection === label ? null : label);
   };
+
+  const collectionRoute =isSuperAdmin ? "/collections" :"/collection/list"
 
   const menuSections = [
     {
@@ -50,7 +51,7 @@ const Sidebar = () => {
       label: "Collections",
       icon: PaymentsIcon,
       children: [
-        { label: "Collection List", path: "/collection/list" },
+        { label: "Collections", path: collectionRoute },
         // { label: "Pending Approvals", path: "/payments/pending" },
       ],
     },
