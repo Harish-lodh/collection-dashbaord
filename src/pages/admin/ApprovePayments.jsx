@@ -201,11 +201,11 @@ const ApprovePayments = () => {
   }, []);
 
   /* ------------------ Image Loader ------------------ */
-  const loadAndShowImage = async (id, type) => {
+  const loadAndShowImage = async (id,partner, type) => {
     try {
       const res = await apiClient.get(`/web/collection/${id}/images`, {
         params: {
-          partner: getDealer(),
+          partner,//here send partner which is click on receipt 
           type,
         },
       });
@@ -489,7 +489,7 @@ const ApprovePayments = () => {
       exportable: false,
       render: (v, row) =>
         row.image1Present ? (
-          <IconButton onClick={() => loadAndShowImage(row.id, "image1")}>
+          <IconButton onClick={() => loadAndShowImage(row.id, row.partner, "image1")}>
             <VisibilityIcon />
           </IconButton>
         ) : (
@@ -504,7 +504,7 @@ const ApprovePayments = () => {
       exportable: false,
       render: (v, row) =>
         row.image2Present ? (
-          <IconButton onClick={() => loadAndShowImage(row.id, "image2")}>
+          <IconButton onClick={() => loadAndShowImage(row.id,row.partner, "image2")}>
             <VisibilityIcon />
           </IconButton>
         ) : (
@@ -519,7 +519,7 @@ const ApprovePayments = () => {
       exportable: false,
       render: (v, row) =>
         row.selfiePresent ? (
-          <IconButton onClick={() => loadAndShowImage(row.id, "selfie")}>
+          <IconButton onClick={() => loadAndShowImage(row.id,row.partner, "selfie")}>
             <VisibilityIcon />
           </IconButton>
         ) : (

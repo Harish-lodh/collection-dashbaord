@@ -92,7 +92,7 @@ export default function Dashboard() {
        totalCount=resp.data.totalCases
        
         }else if(getDealer()==="embifi"){
-           totalCount=stats.activeAgents;
+           totalCount=stats.activeLoans;
         }
         if (cancel) return;
 

@@ -30,7 +30,7 @@ export function getDealer(){
       const res = await apiClient.get(
         `/web/collection/${row.id}/receipt`,
         {
-          params: { partner: getDealer() },
+          params: { partner: row.partner },
           responseType: "blob", // important for file download
         }
       );
