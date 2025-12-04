@@ -84,10 +84,19 @@ export default function Dashboard() {
           `${BACKEND_BASE_URL}/web/dashboard?period=${encodeURIComponent(period.value)}&partner=${getDealer()}`,
           { headers: token ? { Authorization: `Bearer ${token}` } : {} }
         );
-        const totalCount=await axios.get(`${VITE_MALHOTRA_URL}/api/collection/malhotra/total-cases`)
+        console.log(res)
+        const { stats, charts } = res.data || {};
+        let totalCount=0;
+        if(getDealer()==="malhotra"){
+       const resp=await axios.get(`${VITE_MALHOTRA_URL}/api/collection/malhotra/total-cases`)
+       totalCount=resp.data.totalCases
+       
+        }else if(getDealer()==="embifi"){
+           totalCount=stats.activeAgents;
+        }
         if (cancel) return;
 
-        const { stats, charts } = res.data || {};
+        
         // inside your axios call after getting res.data
         const utcLabels = charts?.trend?.labels || [];
 
@@ -113,7 +122,7 @@ export default function Dashboard() {
         });
 
         setTotalCollections(stats?.totalCollections ?? 0);
-        setActiveLoans(totalCount?.data?.totalCases ||stats?.activeLoans || 0);
+        setActiveLoans(totalCount);
         setRepossessions(stats?.repossessions ?? 0);
         setActiveAgents(stats?.activeAgents ?? 0);
 

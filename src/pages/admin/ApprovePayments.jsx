@@ -276,31 +276,59 @@ const ApprovePayments = () => {
     setApproveDialogOpen(true);
   };
 
-  const handleConfirmApprove = async () => {
-    if (!bankDate) {
-      toast.error("Please select a bank date");
-      return;
-    }
+const handleConfirmApprove = async () => {
+  if (!bankDate) {
+    toast.error("Please select a bank date");
+    return;
+  }
 
-    try {
-      await apiClient.post(`/web/collection/${selectedRowForApprove.id}/approve`, {
+  try {
+    const res = await apiClient.post(
+      `/web/collection/${selectedRowForApprove.id}/approve`,
+      {
         partner: selectedRowForApprove.partner,
         bankDate,
-      });
+      }
+    );
 
-      toast.success("Payment approved");
+    toast.success("Payment approved");
 
-      // remove approved row from UI
-      setPayments((prev) => prev.filter((p) => p.id !== selectedRowForApprove.id));
-    } catch (err) {
-      console.error("Approve payment error:", err);
-      toast.error("Failed to approve payment");
-    } finally {
-      setApproveDialogOpen(false);
-      setSelectedRowForApprove(null);
-      setBankDate("");
-    }
-  };
+    setPayments((prev) =>
+      prev.map((p) =>
+        p.id === selectedRowForApprove.id
+          ? {
+              ...p,
+              approved: true,
+              approved_by: res.data?.approved_by || "You",
+              bankDate,
+            }
+          : p
+      )
+    );
+  } catch (err) {
+    console.error("Approve payment error:", err);
+
+    const data = err.response?.data;
+
+    // Safely extract the first row error reason if present
+    const rowErrorReason =
+      data?.lmsResponse?.row_errors?.[0]?.reason || null;
+
+    const reason =
+      rowErrorReason ||
+      data?.message || // "LMS did not approve this payment"
+      err.message ||
+      "Failed to approve payment";
+
+    toast.error(reason);
+  } finally {
+    setApproveDialogOpen(false);
+    setSelectedRowForApprove(null);
+    setBankDate("");
+  }
+};
+
+
 
   const handleCloseApproveDialog = () => {
     setApproveDialogOpen(false);
