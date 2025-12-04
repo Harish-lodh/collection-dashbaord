@@ -23,7 +23,7 @@ import GetAppIcon from "@mui/icons-material/GetApp";
 import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
 import apiClient from "../../server/apiClient"; // axios instance with baseURL, interceptors, etc.
-import {handleGenerateReceipt} from "../../Utils/helper";
+import { handleGenerateReceipt } from "../../Utils/helper";
 /* ------------------ Filter Popover ------------------ */
 const FilterContent = ({
   tempFilters,
@@ -184,8 +184,8 @@ const ApprovePayments = () => {
         const list = Array.isArray(res.data?.data)
           ? res.data.data
           : Array.isArray(res.data)
-          ? res.data
-          : [];
+            ? res.data
+            : [];
 
         setUsersOpts(
           list.map((u) => ({
@@ -276,57 +276,58 @@ const ApprovePayments = () => {
     setApproveDialogOpen(true);
   };
 
-const handleConfirmApprove = async () => {
-  if (!bankDate) {
-    toast.error("Please select a bank date");
-    return;
-  }
+  const handleConfirmApprove = async () => {
+    if (!bankDate) {
+      toast.error("Please select a bank date");
+      return;
+    }
+    
 
-  try {
-    const res = await apiClient.post(
-      `/web/collection/${selectedRowForApprove.id}/approve`,
-      {
-        partner: selectedRowForApprove.partner,
-        bankDate,
-      }
-    );
+    try {
+      const res = await apiClient.post(
+        `/web/collection/${selectedRowForApprove.id}/approve`,
+        {
+          partner: selectedRowForApprove.partner,
+          bankDate,
+        }
+      );
 
-    toast.success("Payment approved");
+      toast.success("Payment approved");
 
-    setPayments((prev) =>
-      prev.map((p) =>
-        p.id === selectedRowForApprove.id
-          ? {
+      setPayments((prev) =>
+        prev.map((p) =>
+          p.id === selectedRowForApprove.id
+            ? {
               ...p,
               approved: true,
               approved_by: res.data?.approved_by || "You",
               bankDate,
             }
-          : p
-      )
-    );
-  } catch (err) {
-    console.error("Approve payment error:", err);
+            : p
+        )
+      );
+    } catch (err) {
+      console.error("Approve payment error:", err);
 
-    const data = err.response?.data;
+      const data = err.response?.data;
 
-    // Safely extract the first row error reason if present
-    const rowErrorReason =
-      data?.lmsResponse?.row_errors?.[0]?.reason || null;
+      // Safely extract the first row error reason if present
+      const rowErrorReason =
+        data?.lmsResponse?.row_errors?.[0]?.reason || null;
 
-    const reason =
-      rowErrorReason ||
-      data?.message || // "LMS did not approve this payment"
-      err.message ||
-      "Failed to approve payment";
+      const reason =
+        rowErrorReason ||
+        data?.message || // "LMS did not approve this payment"
+        err.message ||
+        "Failed to approve payment";
 
-    toast.error(reason);
-  } finally {
-    setApproveDialogOpen(false);
-    setSelectedRowForApprove(null);
-    setBankDate("");
-  }
-};
+      toast.error(reason);
+    } finally {
+      setApproveDialogOpen(false);
+      setSelectedRowForApprove(null);
+      setBankDate("");
+    }
+  };
 
 
 
@@ -435,13 +436,13 @@ const handleConfirmApprove = async () => {
       render: (v) =>
         v
           ? new Date(v).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
           : "-",
     },
-    {key:"partner",label:"Partners",exportable:true},
+    { key: "partner", label: "Partners", exportable: true },
     { key: "paymentMode", label: "Mode", exportable: true },
     { key: "paymentRef", label: "Transaction ID", exportable: true },
     {
@@ -462,13 +463,13 @@ const handleConfirmApprove = async () => {
         v ? (
           <span style={{ color: "green", fontWeight: 600 }}>Approved</span>
         ) : (
-<Button
-  size="small"
-  variant="contained"
-  onClick={() => handleOpenApproveDialog(row)}
->
-  Approve
-</Button>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => handleOpenApproveDialog(row)}
+          >
+            Approve
+          </Button>
 
         ),
     },
@@ -693,4 +694,4 @@ const handleConfirmApprove = async () => {
   );
 };
 
-export default  ApprovePayments;
+export default ApprovePayments;
