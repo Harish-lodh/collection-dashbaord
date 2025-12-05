@@ -122,6 +122,7 @@ const ApprovePayments = () => {
   const [payments, setPayments] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
   const [usersOpts, setUsersOpts] = useState([]);
+  const [bankUtr, setBankUtr] = useState("");
 
   const [selectedImage, setSelectedImage] = useState(null);
   const [openModal, setOpenModal] = useState(false);
@@ -201,7 +202,7 @@ const ApprovePayments = () => {
   }, []);
 
   /* ------------------ Image Loader ------------------ */
-  const loadAndShowImage = async (id,partner, type) => {
+  const loadAndShowImage = async (id, partner, type) => {
     try {
       const res = await apiClient.get(`/web/collection/${id}/images`, {
         params: {
@@ -281,7 +282,11 @@ const ApprovePayments = () => {
       toast.error("Please select a bank date");
       return;
     }
-    
+
+    if (!bankUtr?.trim()) {
+      toast.error("Please enter Bank UTR");
+      return;
+    }
 
     try {
       const res = await apiClient.post(
@@ -289,11 +294,13 @@ const ApprovePayments = () => {
         {
           partner: selectedRowForApprove.partner,
           bankDate,
+          bankUtr,  // <<< NEW FIELD SEND TO API
         }
       );
 
       toast.success("Payment approved");
 
+      // Update UI instantly
       setPayments((prev) =>
         prev.map((p) =>
           p.id === selectedRowForApprove.id
@@ -302,6 +309,7 @@ const ApprovePayments = () => {
               approved: true,
               approved_by: res.data?.approved_by || "You",
               bankDate,
+              bankUtr,
             }
             : p
         )
@@ -326,6 +334,7 @@ const ApprovePayments = () => {
       setApproveDialogOpen(false);
       setSelectedRowForApprove(null);
       setBankDate("");
+      setBankUtr(""); // reset
     }
   };
 
@@ -504,7 +513,7 @@ const ApprovePayments = () => {
       exportable: false,
       render: (v, row) =>
         row.image2Present ? (
-          <IconButton onClick={() => loadAndShowImage(row.id,row.partner, "image2")}>
+          <IconButton onClick={() => loadAndShowImage(row.id, row.partner, "image2")}>
             <VisibilityIcon />
           </IconButton>
         ) : (
@@ -519,7 +528,7 @@ const ApprovePayments = () => {
       exportable: false,
       render: (v, row) =>
         row.selfiePresent ? (
-          <IconButton onClick={() => loadAndShowImage(row.id,row.partner, "selfie")}>
+          <IconButton onClick={() => loadAndShowImage(row.id, row.partner, "selfie")}>
             <VisibilityIcon />
           </IconButton>
         ) : (
@@ -532,19 +541,19 @@ const ApprovePayments = () => {
       label: "Receipt",
       exportable: false,
       render: (v, row) =>
-        // row.approved ?
-       (
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => handleGenerateReceipt(row)}
-          >
-            Receipt
-          </Button>
-        ) 
-        // : (
-        //   <span style={{ fontSize: 12, color: "#9ca3af" }}>Pending</span>
-        // ),
+      // row.approved ?
+      (
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => handleGenerateReceipt(row)}
+        >
+          Receipt
+        </Button>
+      )
+      // : (
+      //   <span style={{ fontSize: 12, color: "#9ca3af" }}>Pending</span>
+      // ),
     },
   ];
 
@@ -679,10 +688,18 @@ const ApprovePayments = () => {
                 InputLabelProps={{ shrink: true }}
                 value={bankDate}
                 onChange={(e) => setBankDate(e.target.value)}
-                sx={{ mt: 1 }}
-                inputProps={{ min: new Date().toISOString().split("T")[0] }} // Optional: prevent past dates
+                sx={{ mt: 1, mb: 2 }}
+              />
+
+              <TextField
+                fullWidth
+                label="Bank UTR No."
+                placeholder="Enter UTR"
+                value={bankUtr}
+                onChange={(e) => setBankUtr(e.target.value)}
               />
             </DialogContent>
+
             <DialogActions>
               <Button onClick={handleCloseApproveDialog}>Cancel</Button>
               <Button onClick={handleConfirmApprove} variant="contained">
