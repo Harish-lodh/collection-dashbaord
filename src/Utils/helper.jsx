@@ -1,6 +1,6 @@
 // utils->helper.jsx
 import apiClient from "../server/apiClient";
-
+import { toast } from "react-toastify";
 
 export function bufferToBase64Image(bufferObj) {
   if (!bufferObj || !bufferObj.data) return null;
@@ -22,10 +22,10 @@ export function getDealer(){
   export const handleGenerateReceipt = async (row) => {
     try {
       // only allow for approved payments
-      if (!row.approved) {
-        toast.warn("Receipt can be generated only for approved payments.");
-        return;
-      }
+      // if (!row.approved) {
+      //   toast.warn("Receipt can be generated only for approved payments.");
+      //   return;
+      // }
 
       const res = await apiClient.get(
         `/web/collection/${row.id}/receipt`,

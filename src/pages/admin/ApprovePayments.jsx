@@ -532,7 +532,8 @@ const ApprovePayments = () => {
       label: "Receipt",
       exportable: false,
       render: (v, row) =>
-        row.approved ? (
+        // row.approved ?
+       (
           <Button
             size="small"
             variant="outlined"
@@ -540,9 +541,10 @@ const ApprovePayments = () => {
           >
             Receipt
           </Button>
-        ) : (
-          <span style={{ fontSize: 12, color: "#9ca3af" }}>Pending</span>
-        ),
+        ) 
+        // : (
+        //   <span style={{ fontSize: 12, color: "#9ca3af" }}>Pending</span>
+        // ),
     },
   ];
 
