@@ -9,11 +9,18 @@ import TrackingBrowser from '../pages/TrackingBrowser'
 // Import other page components as needed, e.g.:
 // import Dashboard from "../pages/Dashboard";
 import ApprovePayments from "../pages/admin/ApprovePayments"
+import AdminDashboard from "../pages/admin/dashboard"; // Assuming this component exists based on the comment
 
 // Simple ProtectedRoute component (move to its own file if preferred)
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   return token ? children : <Navigate to="/login" replace />;
+};
+
+// Dashboard wrapper component for role-based rendering
+const DashboardWrapper = () => {
+  const role = localStorage.getItem("role"); // Assuming role is stored in localStorage after login
+  return role === "superadmin" ? <AdminDashboard /> : <CollectionsDashboard />;
 };
 
 const AppRoutes = () => {
@@ -30,7 +37,7 @@ const AppRoutes = () => {
             >
                 <Route index element={<Navigate to="dashboard" replace />} />
                 {/* <Route path="collections" element={<ApprovePayments />} /> */}
-                <Route path="dashboard" element={<CollectionsDashboard />} />
+                <Route path="dashboard" element={<DashboardWrapper />} />
                 <Route path="/collection/list" element={<PaymentsList />} />
                 <Route path="/collections" element={<ApprovePayments/>}/>
                 <Route path="/users/rm" element={<UserList />} />
