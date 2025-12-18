@@ -35,8 +35,8 @@ const Login = () => {
       localStorage.setItem("username", res.data.user?.name);
       localStorage.setItem("role", res.data.user?.role);
       localStorage.setItem("dealer", res.data.user?.dealer);
-      if (res.data.user?.dealer?.toLowerCase() === "embifi" || res.data.user?.dealer?.toLowerCase() === "malhotra")
-        navigate("/dashboard");
+      if (res.data.user?.dealer){
+        navigate("/dashboard");}
     } catch (err) {
       // ✅ robust error message
       const msg =

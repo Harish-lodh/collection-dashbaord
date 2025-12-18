@@ -45,8 +45,10 @@ const Table = ({ columns = [], data = [], onRowClick }) => {
                             {columns.map((col) => (
                                 <td
                                     key={col.key}
-                                    className="px-4 font-bold py-2 text-[12px] text-gray-700 whitespace-nowrap"
+                                    className="px-2 py-2 text-[12px] text-gray-700 font-bold
+             whitespace-normal break-words max-w-2xs"
                                 >
+
                                     {col.render
                                         ? col.render(row[col.key], row)
                                         : row[col.key] ?? "-"}

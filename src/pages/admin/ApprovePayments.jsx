@@ -380,60 +380,127 @@ const ApprovePayments = () => {
   }, [filters]);
 
   /* ------------------ Excel Export (ALL PENDING DATA) ------------------ */
-  const exportToExcel = async () => {
-    try {
-      if (!payments.length) {
-        toast.warn("No data to export!");
-        return;
-      }
+  // const exportToExcel = async () => {
+  //   try {
+  //     if (!payments.length) {
+  //       toast.warn("No data to export!");
+  //       return;
+  //     }
 
-      const excludeKeys = [
-        "image1Present",
-        "image2Present",
-        "selfiePresent",
-        "approved_by",
-      ];
+  //     const excludeKeys = [
+  //       "image1Present",
+  //       "image2Present",
+  //       "selfiePresent",
+  //       "approved_by",
+  //     ];
 
-      const formatDate = (date) => {
-        if (!date) return "-";
-        const d = new Date(date);
-        if (isNaN(d)) return "-";
+  //     const formatDate = (date) => {
+  //       if (!date) return "-";
+  //       const d = new Date(date);
+  //       if (isNaN(d)) return "-";
 
-        const dd = String(d.getDate()).padStart(2, "0");
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const yyyy = d.getFullYear();
+  //       const dd = String(d.getDate()).padStart(2, "0");
+  //       const mm = String(d.getMonth() + 1).padStart(2, "0");
+  //       const yyyy = d.getFullYear();
 
-        return `${dd}-${mm}-${yyyy}`;
-      };
+  //       return `${dd}-${mm}-${yyyy}`;
+  //     };
 
-      const dateKeys = ["paymentDate", "createdAt"];
+  //     const dateKeys = ["paymentDate", "createdAt"];
 
-      // ✅ Use CURRENT PAGE data only
-      const cleanData = payments.map((item) =>
-        Object.fromEntries(
-          Object.entries(item)
-            .filter(([key]) => !excludeKeys.includes(key))
-            .map(([key, value]) => {
-              if (dateKeys.includes(key)) {
-                return [key, formatDate(value)];
-              }
-              return [key, value ?? "-"];
-            })
-        )
-      );
+  //     // ✅ Use CURRENT PAGE data only
+  //     const cleanData = payments.map((item) =>
+  //       Object.fromEntries(
+  //         Object.entries(item)
+  //           .filter(([key]) => !excludeKeys.includes(key))
+  //           .map(([key, value]) => {
+  //             if (dateKeys.includes(key)) {
+  //               return [key, formatDate(value)];
+  //             }
+  //             return [key, value ?? "-"];
+  //           })
+  //       )
+  //     );
 
-      const ws = XLSX.utils.json_to_sheet(cleanData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Payments");
+  //     const ws = XLSX.utils.json_to_sheet(cleanData);
+  //     const wb = XLSX.utils.book_new();
+  //     XLSX.utils.book_append_sheet(wb, ws, "Payments");
 
-      XLSX.writeFile(wb, "payments_current_page.xlsx");
-      toast.success("Current page exported successfully!");
-    } catch (err) {
-      console.error("Export Excel Error:", err);
-      toast.error("Failed to export Excel");
+  //     XLSX.writeFile(wb, "payments_current_page.xlsx");
+  //     toast.success("Current page exported successfully!");
+  //   } catch (err) {
+  //     console.error("Export Excel Error:", err);
+  //     toast.error("Failed to export Excel");
+  //   }
+  // };
+
+const exportToExcel = async () => {
+  try {
+    // Step 1: Check if data exists
+    if (!payments.length) {
+      toast.warn("No data to export!");
+      return;
     }
-  };
 
+    // Step 2: Fetch all data based on current filters
+    setLoading(true);
+    const query = buildQueryString(filters, { page: 1, limit: pagination.total });
+    const res = await apiClient.get(`/web/collection${query}`);
+    
+    const allPayments = res.data?.data || [];
+    
+    if (!allPayments.length) {
+      toast.warn("No payments found for the selected filters!");
+      return;
+    }
+
+    // Step 3: Process data to exclude certain keys and format dates
+    const excludeKeys = [
+      "image1Present", "image2Present", "selfiePresent", "status", "approved"
+    ];
+
+    const formatDate = (date) => {
+      if (!date) return "-";
+      const d = new Date(date);
+      if (isNaN(d)) return "-";
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      return `${dd}-${mm}-${yyyy}`;
+    };
+
+    const dateKeys = ["paymentDate", "createdAt"];
+
+    // Step 4: Clean data for export
+    const cleanData = allPayments.map((item) =>
+      Object.fromEntries(
+        Object.entries(item)
+          .filter(([key]) => !excludeKeys.includes(key))
+          .map(([key, value]) => {
+            if (dateKeys.includes(key)) {
+              return [key, formatDate(value)];
+            }
+            return [key, value ?? "-"];
+          })
+      )
+    );
+
+    // Step 5: Generate Excel file
+    const ws = XLSX.utils.json_to_sheet(cleanData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Payments");
+
+    // Step 6: Download the file
+    XLSX.writeFile(wb, "payments_all_data.xlsx");
+
+    toast.success("All data exported successfully!");
+  } catch (err) {
+    console.error("Export Excel Error:", err);
+    toast.error("Failed to export Excel");
+  } finally {
+    setLoading(false);
+  }
+};
 
 
 
@@ -466,6 +533,8 @@ const ApprovePayments = () => {
       exportable: true,
       render: (v) => (v ? Number(v).toLocaleString("en-IN") : "-"),
     },
+    { key:"insurance",label:"insurance"},
+    { key:"remark",label:"remarks"},
     { key: "collectedBy", label: "Collected By", exportable: true },
     { key: "status", label: "Status", exportable: true },
 
