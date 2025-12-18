@@ -1,0 +1,35 @@
+name: Deploy Vite.js App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'  # adjust if needed
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Vite project
+        run: npm run build
+
+      - name: Upload built files to Hostinger
+        env:
+          HOST: collection.fintreefinance.com
+          USER: u341672715
+          PRIVATE_KEY: SHA256:cEzw+h94H3PtY/hwwqVMIxjJcZvnN1u5ObGTAxxbhcg
+        run: |
+          echo "$PRIVATE_KEY" > private_key.pem
+          chmod 600 private_key.pem
+          scp -i private_key.pem -o StrictHostKeyChecking=no -r ./dist/* $USER@$HOST:/public_html/
