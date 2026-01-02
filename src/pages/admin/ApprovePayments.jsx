@@ -43,6 +43,16 @@ const FilterContent = ({
       }}
     >
       <TextField
+  fullWidth
+  label="Loan ID"
+  value={tempFilters.lanId || ""}
+  onChange={(e) =>
+    setTempFilters((prev) => ({ ...prev, lanId: e.target.value }))
+  }
+  sx={{ mb: 1.5 }}
+/>
+
+      <TextField
         fullWidth
         label="Customer Name"
         value={tempFilters.customerName}
@@ -123,7 +133,7 @@ const ApprovePayments = () => {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
   const [usersOpts, setUsersOpts] = useState([]);
   const [bankUtr, setBankUtr] = useState("");
-
+  const [editedAmount, setEditedAmount] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [openModal, setOpenModal] = useState(false);
 
@@ -131,6 +141,7 @@ const ApprovePayments = () => {
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
+      lanId: "",  
     customerName: "",
     collectedBy: [],
     startDate: null,
@@ -152,6 +163,7 @@ const ApprovePayments = () => {
     const {
       page,
       limit,
+      lanId,
       customerName,
       collectedBy,
       startDate,
@@ -162,17 +174,17 @@ const ApprovePayments = () => {
     const params = new URLSearchParams();
     params.set("page", page);
     params.set("limit", limit);
-    params.set("partner", getDealer());
-
+    // params.set("partner", getDealer());
+    if (lanId) params.set("lanId", lanId);
     if (customerName) params.set("customerName", customerName);
     if (collectedBy?.length) params.set("collectedBy", collectedBy.join(","));
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
 
     // 👇 very important: only non-approved by default
-    if (approved !== undefined) {
-      params.set("approved", approved); // "false" / "true"
-    }
+    // if (approved !== undefined) {
+    //   params.set("approved", approved); // "false" / "true"
+    // }
 
     return `?${params.toString()}`;
   };
@@ -243,6 +255,7 @@ const ApprovePayments = () => {
     setFilters((prev) => ({
       ...prev,
       page: 1, // reset page
+      lanId: tempFilters.lanId,
       customerName: tempFilters.customerName,
       collectedBy: tempFilters.collectedBy,
       startDate: tempFilters.startDate,
@@ -256,6 +269,7 @@ const ApprovePayments = () => {
     const cleared = {
       page: 1,
       limit: 10,
+       lanId: "",
       customerName: "",
       collectedBy: [],
       startDate: null,
@@ -273,7 +287,9 @@ const ApprovePayments = () => {
       ? new Date(row.paymentDate).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0];
     setSelectedRowForApprove(row);
+    setBankUtr("");
     setBankDate(defaultBankDate);
+    setEditedAmount(row.amount ? row.amount.toString() : ""); // 👈 Pre-fill with original amount as string
     setApproveDialogOpen(true);
   };
 
@@ -287,17 +303,24 @@ const ApprovePayments = () => {
       toast.error("Please enter Bank UTR");
       return;
     }
+    // 👈 New validation for amount
+    if (!editedAmount || isNaN(editedAmount) || parseFloat(editedAmount) <= 0) {
+      toast.error("Please enter a valid amount greater than 0");
+      return;
+    }
 
     try {
+      console.log("payload to be send", selectedRowForApprove.partner, bankDate, bankUtr);
+
       const res = await apiClient.post(
         `/web/collection/${selectedRowForApprove.id}/approve`,
         {
           partner: selectedRowForApprove.partner,
           bankDate,
           bankUtr,  // <<< NEW FIELD SEND TO API
+          amount: editedAmount // 👈 Log amount
         }
       );
-
       toast.success("Payment approved");
 
       // Update UI instantly
@@ -310,6 +333,7 @@ const ApprovePayments = () => {
               approved_by: res.data?.approved_by || "You",
               bankDate,
               bankUtr,
+              amount: parseFloat(editedAmount),
             }
             : p
         )
@@ -335,6 +359,7 @@ const ApprovePayments = () => {
       setSelectedRowForApprove(null);
       setBankDate("");
       setBankUtr(""); // reset
+      setEditedAmount(""); // 👈 Reset
     }
   };
 
@@ -344,6 +369,7 @@ const ApprovePayments = () => {
     setApproveDialogOpen(false);
     setSelectedRowForApprove(null);
     setBankDate("");
+    setEditedAmount(""); // 👈 Reset
   };
 
   /* ------------------ Fetch Payments ------------------ */
@@ -434,73 +460,74 @@ const ApprovePayments = () => {
   //   }
   // };
 
-const exportToExcel = async () => {
-  try {
-    // Step 1: Check if data exists
-    if (!payments.length) {
-      toast.warn("No data to export!");
-      return;
+  const exportToExcel = async () => {
+    try {
+      // Step 1: Check if data exists
+      if (!payments.length) {
+        toast.warn("No data to export!");
+        return;
+      }
+
+      // Step 2: Fetch all data based on current filters
+      setLoading(true);
+      const query = buildQueryString(filters, { page: 1, limit: pagination.total });
+      const res = await apiClient.get(`/web/collection${query}`);
+
+      const allPayments = res.data?.data || [];
+
+      if (!allPayments.length) {
+        toast.warn("No payments found for the selected filters!");
+        return;
+      }
+      console.log(allPayments)
+
+      // Step 3: Process data to exclude certain keys and format dates
+      const excludeKeys = [
+        "image1Present", "image2Present", "selfiePresent", "status", "approved"
+      ];
+
+      const formatDate = (date) => {
+        if (!date) return "-";
+        const d = new Date(date);
+        if (isNaN(d)) return "-";
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const yyyy = d.getFullYear();
+        return `${dd}-${mm}-${yyyy}`;
+      };
+
+      const dateKeys = ["paymentDate", "createdAt"];
+
+      // Step 4: Clean data for export
+      const cleanData = allPayments.map((item) =>
+        Object.fromEntries(
+          Object.entries(item)
+            .filter(([key]) => !excludeKeys.includes(key))
+            .map(([key, value]) => {
+              if (dateKeys.includes(key)) {
+                return [key, formatDate(value)];
+              }
+              return [key, value ?? "-"];
+            })
+        )
+      );
+
+      // Step 5: Generate Excel file
+      const ws = XLSX.utils.json_to_sheet(cleanData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Payments");
+
+      // Step 6: Download the file
+      XLSX.writeFile(wb, "payments_all_data.xlsx");
+
+      toast.success("All data exported successfully!");
+    } catch (err) {
+      console.error("Export Excel Error:", err);
+      toast.error("Failed to export Excel");
+    } finally {
+      setLoading(false);
     }
-
-    // Step 2: Fetch all data based on current filters
-    setLoading(true);
-    const query = buildQueryString(filters, { page: 1, limit: pagination.total });
-    const res = await apiClient.get(`/web/collection${query}`);
-    
-    const allPayments = res.data?.data || [];
-    
-    if (!allPayments.length) {
-      toast.warn("No payments found for the selected filters!");
-      return;
-    }
-
-    // Step 3: Process data to exclude certain keys and format dates
-    const excludeKeys = [
-      "image1Present", "image2Present", "selfiePresent", "status", "approved"
-    ];
-
-    const formatDate = (date) => {
-      if (!date) return "-";
-      const d = new Date(date);
-      if (isNaN(d)) return "-";
-      const dd = String(d.getDate()).padStart(2, "0");
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const yyyy = d.getFullYear();
-      return `${dd}-${mm}-${yyyy}`;
-    };
-
-    const dateKeys = ["paymentDate", "createdAt"];
-
-    // Step 4: Clean data for export
-    const cleanData = allPayments.map((item) =>
-      Object.fromEntries(
-        Object.entries(item)
-          .filter(([key]) => !excludeKeys.includes(key))
-          .map(([key, value]) => {
-            if (dateKeys.includes(key)) {
-              return [key, formatDate(value)];
-            }
-            return [key, value ?? "-"];
-          })
-      )
-    );
-
-    // Step 5: Generate Excel file
-    const ws = XLSX.utils.json_to_sheet(cleanData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Payments");
-
-    // Step 6: Download the file
-    XLSX.writeFile(wb, "payments_all_data.xlsx");
-
-    toast.success("All data exported successfully!");
-  } catch (err) {
-    console.error("Export Excel Error:", err);
-    toast.error("Failed to export Excel");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
 
@@ -533,8 +560,8 @@ const exportToExcel = async () => {
       exportable: true,
       render: (v) => (v ? Number(v).toLocaleString("en-IN") : "-"),
     },
-    { key:"insurance",label:"insurance"},
-    { key:"remark",label:"remarks"},
+    { key: "insurance", label: "insurance" },
+    { key: "remark", label: "remarks" },
     { key: "collectedBy", label: "Collected By", exportable: true },
     { key: "status", label: "Status", exportable: true },
 
@@ -756,6 +783,16 @@ const exportToExcel = async () => {
           >
             <DialogTitle>Approve Payment - Set Bank Date</DialogTitle>
             <DialogContent>
+              <TextField
+                fullWidth
+                label="Amount (₹)" // 👈 New field
+                type="number" // 👈 Numeric input
+                InputLabelProps={{ shrink: true }}
+                value={editedAmount}
+                onChange={(e) => setEditedAmount(e.target.value)} // 👈 Bind to state
+                sx={{ mt: 1, mb: 2 }}
+                inputProps={{ min: 0.01, step: 0.01 }} // 👈 Prevent negative/zero
+              />
               <TextField
                 fullWidth
                 label="Bank Date"

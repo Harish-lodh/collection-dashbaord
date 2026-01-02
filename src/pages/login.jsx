@@ -35,8 +35,8 @@ const Login = () => {
       localStorage.setItem("username", res.data.user?.name);
       localStorage.setItem("role", res.data.user?.role);
       localStorage.setItem("dealer", res.data.user?.dealer);
-      if (res.data.user?.dealer){
-        navigate("/dashboard");}
+      // Always navigate to dashboard after successful login (remove conditional to fix redirect issue)
+      navigate("/dashboard");
     } catch (err) {
       // ✅ robust error message
       const msg =
@@ -65,6 +65,7 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"  // Add autocomplete for better UX (fixes console warning)
           />
 
           <input
@@ -74,6 +75,7 @@ const Login = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete="current-password"  // Add autocomplete to suppress the browser warning
           />
 
           <button
