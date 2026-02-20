@@ -44,38 +44,50 @@ const FilterContent = ({
         borderRadius: 8,
       }}
     >
-<FormGroup sx={{ mb: 1 }}>
-  <FormControlLabel
-    control={
-      <Checkbox
-        checked={tempFilters.approvedChecked}
+      <FormGroup sx={{ mb: 1 }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={tempFilters.approvedChecked}
+              onChange={(e) =>
+                setTempFilters((prev) => ({
+                  ...prev,
+                  approvedChecked: e.target.checked,
+                }))
+              }
+            />
+          }
+          label="Approved"
+        />
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={tempFilters.notApprovedChecked}
+              onChange={(e) =>
+                setTempFilters((prev) => ({
+                  ...prev,
+                  notApprovedChecked: e.target.checked,
+                }))
+              }
+            />
+          }
+          label="Not Approved"
+        />
+      </FormGroup>
+      <TextField
+        fullWidth
+        label="LAN ID"
+        placeholder="Enter LAN ID"
+        value={tempFilters.lanId || ""}
         onChange={(e) =>
           setTempFilters((prev) => ({
             ...prev,
-            approvedChecked: e.target.checked,
+            lanId: e.target.value,
           }))
         }
+        sx={{ mb: 1.5 }}
       />
-    }
-    label="Approved"
-  />
-
-  <FormControlLabel
-    control={
-      <Checkbox
-        checked={tempFilters.notApprovedChecked}
-        onChange={(e) =>
-          setTempFilters((prev) => ({
-            ...prev,
-            notApprovedChecked: e.target.checked,
-          }))
-        }
-      />
-    }
-    label="Not Approved"
-  />
-</FormGroup>
-
 
       <TextField
         fullWidth
@@ -154,21 +166,12 @@ const ApprovePayments = () => {
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
-  const [usersOpts, setUsersOpts] = useState([]);
   const [bankUtr, setBankUtr] = useState("");
   const [editedAmount, setEditedAmount] = useState("");
   const [editedPaymentRef, setEditedPaymentRef] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [openModal, setOpenModal] = useState(false);
-
-  // ✅ ADD HERE
-  const usersMap = useMemo(() => {
-    const map = {};
-    usersOpts.forEach((u) => {
-      map[u.id] = u.label;
-    });
-    return map;
-  }, [usersOpts]);
+  const [usersOpts, setUsersOpts] = useState([]);
 
   // 👇 Add approved flag (false = pending-approval only)
   const [filters, setFilters] = useState({
@@ -180,7 +183,7 @@ const ApprovePayments = () => {
     startDate: null,
     endDate: null,
     approvedChecked: true,
-notApprovedChecked: true,
+    notApprovedChecked: true,
   });
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -216,10 +219,9 @@ notApprovedChecked: true,
     if (endDate) params.set("endDate", endDate);
 
     // 👇 very important: only non-approved by default
- if (approved !== undefined) {
-  params.set("approved", approved);
-}
-
+    if (approved !== undefined) {
+      params.set("approved", approved);
+    }
 
     return `?${params.toString()}`;
   };
@@ -235,12 +237,12 @@ notApprovedChecked: true,
             ? res.data
             : [];
 
-        setUsersOpts(
-          list.map((u) => ({
-            id: u.id,
-            label: u.name || `User #${u.id}`,
-          })),
-        );
+        const formatted = list.map((u) => ({
+          id: u.id,
+          label: u.name,
+        }));
+
+        setUsersOpts(formatted); // ✅ IMPORTANT
       } catch (err) {
         console.error("Fetch Users Error:", err);
         toast.error("Failed to fetch users");
@@ -287,14 +289,14 @@ notApprovedChecked: true,
   const handleClose = () => setAnchorEl(null);
 
   const handleApply = () => {
- let approved;
-     if (tempFilters.approvedChecked && !tempFilters.notApprovedChecked) {
-    approved = true;
-  } else if (!tempFilters.approvedChecked && tempFilters.notApprovedChecked) {
-    approved = false;
-  } else {
-    approved = undefined; // both checked OR both unchecked
-  }
+    let approved;
+    if (tempFilters.approvedChecked && !tempFilters.notApprovedChecked) {
+      approved = true;
+    } else if (!tempFilters.approvedChecked && tempFilters.notApprovedChecked) {
+      approved = false;
+    } else {
+      approved = undefined; // both checked OR both unchecked
+    }
     setFilters((prev) => ({
       ...prev,
       page: 1, // reset page
@@ -303,7 +305,8 @@ notApprovedChecked: true,
       collectedBy: tempFilters.collectedBy,
       startDate: tempFilters.startDate,
       endDate: tempFilters.endDate,
- approved,    }));
+      approved,
+    }));
     handleClose();
   };
 
@@ -316,8 +319,8 @@ notApprovedChecked: true,
       collectedBy: [],
       startDate: null,
       endDate: null,
-       approvedChecked: true,
-  notApprovedChecked: true,
+      approvedChecked: true,
+      notApprovedChecked: true,
     };
     setTempFilters(cleared);
     setFilters(cleared);
@@ -509,9 +512,6 @@ notApprovedChecked: true,
               if (dateKeys.includes(key)) {
                 return [key, formatDate(value)];
               }
-              if (key === "collectedBy") {
-                return [key, usersMap[value] || value];
-              }
 
               return [key, value ?? "-"];
             }),
@@ -569,7 +569,6 @@ notApprovedChecked: true,
       key: "collectedBy",
       label: "Collected By",
       exportable: true,
-      render: (v) => usersMap[v] || `User #${v}` || "-",
     },
     { key: "status", label: "Status", exportable: true },
 
@@ -715,7 +714,7 @@ notApprovedChecked: true,
           setTempFilters={setTempFilters}
           onApply={handleApply}
           onClear={handleClear}
-          usersOpts={usersOpts}
+          usersOpts={usersOpts} // ✅ FIX
         />
       </Popover>
 
